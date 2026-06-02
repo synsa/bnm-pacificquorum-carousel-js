@@ -354,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 canvasEl.style.width  = '100%';
                 /* Height: let it be taller than the thumb — the parent's
                    overflow:hidden will clip it to THUMB_H.              */
-                canvasEl.style.height = Math.round(scaledVP.height / dpr) + 'px';
+                canvasEl.style.height = 'auto';
 
                 page.render({
                   canvasContext: canvasEl.getContext('2d'),
