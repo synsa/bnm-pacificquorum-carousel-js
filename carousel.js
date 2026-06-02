@@ -130,8 +130,8 @@ document.addEventListener('DOMContentLoaded', function () {
      Paste your deployed Worker URL and token below.
      NOTE: the token lives in client-side JS — acceptable here
      since it only protects carousel content, not sensitive data. */
-  var WORKER_URL     = 'PASTE_WORKER_URL_HERE';   /* e.g. https://pq-carousel.yourname.workers.dev/carousel */
-  var CAROUSEL_TOKEN = 'PASTE_TOKEN_HERE';         /* must match CAROUSEL_TOKEN env var in the Worker        */
+  var WORKER_URL     = 'https://pq-carousel.bravenetmarketing.workers.dev/carousel';
+  var CAROUSEL_TOKEN = 'wyW4GktPiyBFqAxAh1aD';    /* must match CAROUSEL_TOKEN env var in the Worker        */
 
   function isMobile()     { return window.innerWidth <= 576; }
   function getVisible()   { return isMobile() ? 1 : 2.5; }
@@ -193,12 +193,14 @@ document.addEventListener('DOMContentLoaded', function () {
     return fetch(WORKER_URL, {
       method: 'PUT',
       headers: {
-        'Content-Type':    'application/json',
+        'Content-Type':     'application/json',
         'X-Carousel-Token': CAROUSEL_TOKEN
       },
       body: JSON.stringify(data)
     }).then(function (resp) {
-      if (!resp.ok) throw new Error('publish failed');
+      return resp.text().then(function (text) {
+        if (!resp.ok) throw new Error('HTTP ' + resp.status + ': ' + text);
+      });
     });
   }
 
@@ -339,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 canvasEl.height = scaledVP.height;
 
                 /* Set CSS display size back to CSS px so it fits the card */
-                canvasEl.style.width  = cssW + 'px';
+                canvasEl.style.width  = '100%';
                 /* Height: let it be taller than the thumb — the parent's
                    overflow:hidden will clip it to THUMB_H.              */
                 canvasEl.style.height = Math.round(scaledVP.height / dpr) + 'px';
@@ -899,9 +901,10 @@ document.addEventListener('DOMContentLoaded', function () {
         ok.textContent = 'Published.'; ok.style.display = 'inline';
         setTimeout(function () { ok.style.display = 'none'; ok.textContent = 'Saved.'; }, 3000);
       })
-      .catch(function () {
-        ok.textContent = 'Publish failed — check WORKER_URL and CAROUSEL_TOKEN in carousel.js.'; ok.style.color = '#c00'; ok.style.display = 'inline';
-        setTimeout(function () { ok.style.display = 'none'; ok.style.color = ''; ok.textContent = 'Saved.'; }, 5000);
+      .catch(function (err) {
+        ok.textContent = 'Publish failed: ' + (err && err.message ? err.message : 'Unknown error');
+        ok.style.color = '#c00'; ok.style.display = 'inline';
+        setTimeout(function () { ok.style.display = 'none'; ok.style.color = ''; ok.textContent = 'Saved.'; }, 10000);
       })
       .finally(function () {
         btn.disabled = false; btn.textContent = 'Publish to Site';
