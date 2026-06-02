@@ -165,10 +165,17 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   /* Fetch from the Worker so ALL browsers see the same published data.
-     Falls back to localStorage cache, then hardcoded defaults.       */
+     Falls back to localStorage cache, then hardcoded defaults.
+     5-second timeout prevents a slow/down Worker from hanging the page. */
   function loadCards() {
-    return fetch(WORKER_URL)
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = controller ? setTimeout(function () { controller.abort(); }, 5000) : null;
+    return fetch(WORKER_URL, {
+      cache: 'no-store',
+      signal: controller ? controller.signal : undefined
+    })
       .then(function (resp) {
+        clearTimeout(timer);
         if (!resp.ok) throw new Error('fetch failed');
         return resp.json();
       })
@@ -326,8 +333,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 /* Measure the actual rendered thumb width in CSS px,
                    then multiply by devicePixelRatio for sharp rendering
                    on retina/HiDPI screens.                            */
-                var container = canvasEl.parentElement;
-                var cssW = container ? (container.offsetWidth || 300) : 300;
+                /* Walk up the DOM to find a real rendered width — direct
+                   parent may be 0 if the card is in a hidden tab.      */
+                var cssW = 0, el = canvasEl;
+                while (el && !cssW) { cssW = el.offsetWidth; el = el.parentElement; }
+                if (!cssW) cssW = Math.floor(window.innerWidth / 2.5);
                 var dpr  = window.devicePixelRatio || 1;
 
                 /* Scale the PDF viewport so 1 PDF pt = enough px to
@@ -711,7 +721,7 @@ document.addEventListener('DOMContentLoaded', function () {
   adminModal.id = 'vcAdminModal';
   adminModal.innerHTML =
     '<div id="vcAdminPanel">' +
-      '<h2>Edit Carousel <span>Changes save to this browser. Clear cache to reset.</span><button id="vcAdmClose">&#215;</button></h2>' +
+      '<h2>Edit Carousel <span>Save &amp; Preview updates locally. Publish to Site goes live for all visitors.</span><button id="vcAdmClose">&#215;</button></h2>' +
       '<div class="vca-tabs" id="vcAdmTabs"></div>' +
       '<div class="vca-scroll" id="vcAdmBody"></div>' +
       '<div class="vca-footer">' +
@@ -898,10 +908,11 @@ document.addEventListener('DOMContentLoaded', function () {
     btn.disabled = true; btn.textContent = 'Publishing…';
     publishCards(clone(working))
       .then(function () {
-        ok.textContent = 'Published.'; ok.style.display = 'inline';
+        ok.textContent = 'Published.'; ok.style.color = ''; ok.style.display = 'inline';
         setTimeout(function () { ok.style.display = 'none'; ok.textContent = 'Saved.'; }, 3000);
       })
       .catch(function (err) {
+        console.error('[carousel] Publish failed:', err);
         ok.textContent = 'Publish failed: ' + (err && err.message ? err.message : 'Unknown error');
         ok.style.color = '#c00'; ok.style.display = 'inline';
         setTimeout(function () { ok.style.display = 'none'; ok.style.color = ''; ok.textContent = 'Saved.'; }, 10000);
