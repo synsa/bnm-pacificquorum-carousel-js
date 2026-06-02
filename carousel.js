@@ -133,6 +133,13 @@ document.addEventListener('DOMContentLoaded', function () {
   var WORKER_URL     = 'https://pq-carousel.bravenetmarketing.workers.dev/carousel';
   var CAROUSEL_TOKEN = 'wyW4GktPiyBFqAxAh1aD';    /* must match CAROUSEL_TOKEN env var in the Worker        */
 
+  /* Per-page data isolation — read data-id from the carousel element.
+     Each page needs: <div id="vcCarousel1" data-id="your-page-id">
+     The ID is appended as ?id= so each page has its own KV slot.    */
+  var carouselEl0   = document.getElementById('vcCarousel1');
+  var CAROUSEL_ID   = (carouselEl0 && carouselEl0.getAttribute('data-id')) || 'default';
+  var WORKER_URL_ID = WORKER_URL + '?id=' + encodeURIComponent(CAROUSEL_ID);
+
   function isMobile()     { return window.innerWidth <= 576; }
   function getVisible()   { return isMobile() ? 1 : 2.5; }
   function isFS()         { return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement); }
@@ -170,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function loadCards() {
     var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
     var timer = controller ? setTimeout(function () { controller.abort(); }, 5000) : null;
-    return fetch(WORKER_URL, {
+    return fetch(WORKER_URL_ID, {
       cache: 'no-store',
       signal: controller ? controller.signal : undefined
     })
@@ -197,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function publishCards(data) {
-    return fetch(WORKER_URL, {
+    return fetch(WORKER_URL_ID, {
       method: 'PUT',
       headers: {
         'Content-Type':     'application/json',
@@ -397,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function () {
         'position:absolute;bottom:8px;right:8px;z-index:2;' +
         'background:#1C3046;color:#e5b33e;' +
         'font-family:Rubik,sans-serif;font-size:10px;font-weight:700;' +
-        'letter-spacing:1.6px;padding:2px 7px;border-radius:4px;' +
+        'letter-spacing:1.6px;padding:2px 5px 2px 7px;border-radius:4px;' +
         'pointer-events:none;';
       pdfBadge.textContent = 'PDF';
       thumbDiv.appendChild(pdfBadge);

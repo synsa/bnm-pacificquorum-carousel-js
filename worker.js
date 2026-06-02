@@ -13,7 +13,7 @@
      PUT /carousel  — write card data (requires X-Carousel-Token header)
    ============================================================ */
 
-const KV_KEY      = 'carousel_data';
+const KV_KEY_PREFIX = 'carousel_data';
 const CORS_ORIGIN = '*'; /* Restrict to your Bravesites domain in production,
                             e.g. 'https://mainland-pacificquorum.bravesites.com' */
 
@@ -48,6 +48,10 @@ export default {
     if (url.pathname !== '/carousel') {
       return json({ error: 'Not found' }, 404);
     }
+
+    /* Derive per-page KV key from ?id= param (falls back to 'default') */
+    const pageId = (url.searchParams.get('id') || 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const KV_KEY = KV_KEY_PREFIX + '_' + pageId;
 
     /* GET — return stored data */
     if (method === 'GET') {
